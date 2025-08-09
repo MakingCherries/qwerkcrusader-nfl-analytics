@@ -17,7 +17,22 @@ warnings.filterwarnings('ignore')
 
 # Import professional analytics module
 from pro_analytics import ProfessionalAnalytics, BettingCalculators
-from data_accuracy_framework import DataAccuracyFramework, ProfessionalValidationSuite, ActionableInsightsGenerator
+
+# Import data accuracy framework with error handling
+try:
+    from data_accuracy_framework import DataAccuracyFramework, ProfessionalValidationSuite, ActionableInsightsGenerator
+    ACCURACY_FRAMEWORK_AVAILABLE = True
+except ImportError as e:
+    print(f"Data accuracy framework not available: {e}")
+    ACCURACY_FRAMEWORK_AVAILABLE = False
+
+# Import bet reasoning engine with error handling
+try:
+    from bet_reasoning_engine import BetReasoningEngine, ReasoningDisplayManager
+    REASONING_ENGINE_AVAILABLE = True
+except ImportError as e:
+    print(f"Bet reasoning engine not available: {e}")
+    REASONING_ENGINE_AVAILABLE = False
 
 # Page configuration
 st.set_page_config(
@@ -622,49 +637,112 @@ def main():
             avg_total = np.mean([p['total_prediction'] for p in ai_predictions.values()])
             avg_confidence = np.mean([p['confidence'] for p in ai_predictions.values()])
             
-            st.subheader("📋 Detailed Recommendations")
+            # Professional Bet Reasoning Analysis
+            st.subheader("🧠 Professional Bet Analysis with Reasoning")
             
-            # Spread recommendation
-            current_spread = selected_game_data['spread']
-            spread_edge = avg_spread - current_spread
-            
-            if abs(spread_edge) > 2:
-                spread_rec = "STRONG BET" if spread_edge > 0 else "STRONG BET"
-                spread_team = selected_game_data['home_team'] if spread_edge > 0 else selected_game_data['away_team']
-            elif abs(spread_edge) > 1:
-                spread_rec = "MODERATE BET"
-                spread_team = selected_game_data['home_team'] if spread_edge > 0 else selected_game_data['away_team']
+            if REASONING_ENGINE_AVAILABLE:
+                # Initialize reasoning engine
+                reasoning_manager = ReasoningDisplayManager()
+                
+                # Prepare comprehensive game data
+                game_data = {
+                    'home_team': selected_game_data['home_team'],
+                    'away_team': selected_game_data['away_team'],
+                    'home_rest_days': 7,  # Default, would be calculated from real data
+                    'away_rest_days': 7,
+                    'travel_distance_miles': 800,  # Would be calculated from team locations
+                    'weather': {
+                        'wind_mph': 8,
+                        'temperature_f': 55,
+                        'precipitation_chance': 20
+                    },
+                    'is_division_game': False,  # Would be determined from team divisions
+                    'home_recent_form': '3-2',
+                    'away_recent_form': '2-3',
+                    'h2h_last_5': '3-2',
+                    'home_offense_rank': 12,
+                    'away_defense_rank': 18,
+                    'home_defense_rank': 8,
+                    'away_offense_rank': 15,
+                    'key_injuries': [],
+                    'home_playoff_odds': 65,
+                    'away_playoff_odds': 35
+                }
+                
+                # Prepare prediction data
+                current_spread = selected_game_data['spread']
+                current_total = selected_game_data['total']
+                spread_edge = avg_spread - current_spread
+                total_edge = avg_total - current_total
+                
+                prediction_data = {
+                    'spread_edge': abs(spread_edge),
+                    'total_edge': abs(total_edge),
+                    'confidence': avg_confidence,
+                    'recommended_team': selected_game_data['home_team'] if spread_edge > 0 else selected_game_data['away_team'],
+                    'predicted_spread': avg_spread,
+                    'predicted_total': avg_total,
+                    'model_agreement': 0.85  # Would be calculated from actual model variance
+                }
+                
+                # Prepare market data
+                market_data = {
+                    'current_spread': current_spread,
+                    'current_total': current_total,
+                    'opening_spread': current_spread - 0.5,  # Mock opening line
+                    'opening_total': current_total + 1.0,
+                    'public_betting_percentage': 68,  # Mock public betting data
+                    'sharp_money_percentage': 72
+                }
+                
+                # Display comprehensive reasoning
+                reasoning_manager.display_bet_reasoning(game_data, prediction_data, market_data)
+                
             else:
-                spread_rec = "PASS"
-                spread_team = "No clear edge"
-            
-            st.markdown(f"""
-            <div class="ai-recommendation">
-                <h4>🎯 Spread Analysis</h4>
-                <p><strong>Current Line:</strong> {selected_game_data['home_team']} {current_spread:+.1f}</p>
-                <p><strong>AI Projection:</strong> {avg_spread:+.1f}</p>
-                <p><strong>Edge:</strong> {spread_edge:+.1f} points</p>
-                <p><strong>Recommendation:</strong> {spread_rec} - {spread_team}</p>
-                <p><strong>Reasoning:</strong> Our ensemble of AI models shows a {abs(spread_edge):.1f} point edge based on advanced metrics including team performance, weather conditions, and historical matchup data.</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Total recommendation
-            current_total = selected_game_data['total']
-            total_edge = avg_total - current_total
-            
-            total_rec = "OVER" if total_edge > 1 else "UNDER" if total_edge < -1 else "PASS"
-            
-            st.markdown(f"""
-            <div class="ai-recommendation">
-                <h4>📊 Total Analysis</h4>
-                <p><strong>Current Total:</strong> {current_total:.1f}</p>
-                <p><strong>AI Projection:</strong> {avg_total:.1f}</p>
-                <p><strong>Edge:</strong> {total_edge:+.1f} points</p>
-                <p><strong>Recommendation:</strong> {total_rec}</p>
-                <p><strong>Reasoning:</strong> Based on offensive/defensive efficiency metrics, weather conditions, and pace of play analysis, our models project a {abs(total_edge):.1f} point edge on the total.</p>
-            </div>
-            """, unsafe_allow_html=True)
+                # Fallback to basic recommendations if reasoning engine not available
+                st.warning("🚨 Advanced reasoning engine not available. Showing basic analysis.")
+                
+                # Basic spread recommendation
+                current_spread = selected_game_data['spread']
+                spread_edge = avg_spread - current_spread
+                
+                if abs(spread_edge) > 2:
+                    spread_rec = "🔥 STRONG BET"
+                    spread_team = selected_game_data['home_team'] if spread_edge > 0 else selected_game_data['away_team']
+                elif abs(spread_edge) > 1:
+                    spread_rec = "⚡ MODERATE BET"
+                    spread_team = selected_game_data['home_team'] if spread_edge > 0 else selected_game_data['away_team']
+                else:
+                    spread_rec = "💡 PASS"
+                    spread_team = "No clear edge"
+                
+                st.markdown(f"""
+                <div class="ai-recommendation">
+                    <h4>🎯 Spread Analysis</h4>
+                    <p><strong>Current Line:</strong> {selected_game_data['home_team']} {current_spread:+.1f}</p>
+                    <p><strong>AI Projection:</strong> {avg_spread:+.1f}</p>
+                    <p><strong>Edge:</strong> {spread_edge:+.1f} points</p>
+                    <p><strong>Recommendation:</strong> {spread_rec} - {spread_team}</p>
+                    <p><strong>Basic Reasoning:</strong> AI models show a {abs(spread_edge):.1f} point edge based on team performance metrics.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Basic total recommendation
+                current_total = selected_game_data['total']
+                total_edge = avg_total - current_total
+                
+                total_rec = "🔥 OVER" if total_edge > 1.5 else "🔥 UNDER" if total_edge < -1.5 else "💡 PASS"
+                
+                st.markdown(f"""
+                <div class="ai-recommendation">
+                    <h4>📊 Total Analysis</h4>
+                    <p><strong>Current Total:</strong> {current_total:.1f}</p>
+                    <p><strong>AI Projection:</strong> {avg_total:.1f}</p>
+                    <p><strong>Edge:</strong> {total_edge:+.1f} points</p>
+                    <p><strong>Recommendation:</strong> {total_rec}</p>
+                    <p><strong>Basic Reasoning:</strong> Models project a {abs(total_edge):.1f} point edge on the total.</p>
+                </div>
+                """, unsafe_allow_html=True)
     
     with tab4:
         st.header("📈 Market Analysis & Trends")
@@ -1168,6 +1246,12 @@ def main():
 
     with tab9:
         st.header("✅ Data Quality & Accuracy Monitoring")
+        
+        if not ACCURACY_FRAMEWORK_AVAILABLE:
+            st.error("🚨 Data Accuracy Framework not available")
+            st.info("The data accuracy framework module could not be imported. Please check the deployment.")
+            st.code("Missing: data_accuracy_framework.py")
+            return
         
         # Initialize accuracy framework
         accuracy_framework = DataAccuracyFramework()
